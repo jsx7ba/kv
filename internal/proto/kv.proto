@@ -43,7 +43,8 @@ message WatchRequest {
 message WatchResponse {
     Status status = 1;
     OpType watchType = 2;
-    optional google.protobuf.Any value = 3;
+    string key = 3;
+    optional google.protobuf.Any value = 4;
 }
 
 service KV { 
