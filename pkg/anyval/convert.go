@@ -69,15 +69,6 @@ func Marshal(val interface{}) (*anypb.Any, error) {
 	return anypb.New(m)
 }
 
-type descriptor struct {
-	v         interface{}
-	err       error
-	tmpInt64  int64
-	tmpInt32  int32
-	tmpUInt64 uint64
-	tmpUInt32 uint32
-}
-
 // UnmarshalType converts anypb.Any values to the value requested by the caller.
 func UnmarshalType[T ConvertableType](anyVal *anypb.Any) (T, error) {
 	v, err := unmarshal(anyVal)

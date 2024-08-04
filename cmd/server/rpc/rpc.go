@@ -2,9 +2,9 @@ package rpc
 
 import (
 	"context"
-	"kv/internal/anyval"
 	"kv/internal/gen"
 	"kv/internal/service"
+	"kv/pkg/anyval"
 	"log/slog"
 )
 

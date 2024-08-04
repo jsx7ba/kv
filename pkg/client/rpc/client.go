@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"google.golang.org/grpc"
-	"kv/internal/anyval"
 	"kv/internal/gen"
+	"kv/pkg/anyval"
 )
 
 type Client struct {
