@@ -20,7 +20,7 @@ func New(service service.KVService) *GRPCHandlers {
 	}
 }
 
-func (s *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response, error) {
+func (h *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response, error) {
 	response := &gen.Response{Status: gen.Status_ERROR}
 	value, err := anyval.Unmarshal(r.GetValue())
 	if err != nil {
@@ -28,7 +28,7 @@ func (s *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response,
 		return response, err
 	}
 
-	err = s.kv.Put(r.Key, value)
+	err = h.kv.Put(r.Key, value)
 
 	if err != nil {
 		slog.Error("put", "key", r.Key, "value", value)
@@ -39,9 +39,9 @@ func (s *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response,
 	return response, err
 }
 
-func (s *GRPCHandlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetResponse, error) {
+func (h *GRPCHandlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetResponse, error) {
 	response := &gen.GetResponse{Status: gen.Status_ERROR}
-	v, err := s.kv.Get(r.Key)
+	v, err := h.kv.Get(r.Key)
 
 	if err == nil {
 		av, err := anyval.Marshal(v)
@@ -57,8 +57,8 @@ func (s *GRPCHandlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetRespon
 	return response, err
 }
 
-func (s *GRPCHandlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Response, error) {
-	err := s.kv.Delete(r.Key)
+func (h *GRPCHandlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Response, error) {
+	err := h.kv.Delete(r.Key)
 
 	status := gen.Status_OK
 	if err != nil {
