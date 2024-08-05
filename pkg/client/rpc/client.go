@@ -97,6 +97,7 @@ func (c *Client) Watch(ctx context.Context, key string, operation watch.Operatio
 		for {
 			err := watchClient.RecvMsg(&response)
 			if err != nil {
+				close(updateChan)
 				break
 			}
 

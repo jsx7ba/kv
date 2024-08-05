@@ -13,7 +13,6 @@ import (
 type Handlers struct {
 	gen.UnimplementedKVServer
 	kv service.KVService
-	// TODO: add done channel
 }
 
 func New(service service.KVService) *Handlers {
@@ -78,6 +77,8 @@ func (h *Handlers) Watch(r *gen.WatchRequest, server gen.KV_WatchServer) error {
 out:
 	for {
 		select {
+		case <-server.Context().Done():
+			break out
 		case update := <-watchChan:
 			var v *anypb.Any
 			if update.Value != nil {

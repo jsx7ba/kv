@@ -8,6 +8,7 @@ import (
 	"kv/cmd/server/rpc"
 	"kv/internal/gen"
 	"kv/internal/service"
+	"kv/internal/service/multilock"
 	"kv/internal/service/singlelock"
 	"kv/internal/service/watch"
 	"log"
@@ -24,7 +25,7 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt)
 
 	configureLogging()
-	kvService := singlelock.New()
+	kvService := multilock.New(10, watchingKV, multilock.SimpleHashFunc)
 	go runGrpc(kvService, done, "127.0.0.1:2000")
 	go runHttp(kvService, done, "127.0.0.1:2500")
 
@@ -33,7 +34,10 @@ func main() {
 		close(done)
 		os.Exit(1)
 	}
+}
 
+func watchingKV() service.KVService {
+	return watch.New(singlelock.New())
 }
 
 func runGrpc(kv service.KVService, done chan struct{}, address string) {
@@ -43,7 +47,7 @@ func runGrpc(kv service.KVService, done chan struct{}, address string) {
 	}
 	defer listener.Close()
 
-	handlers := rpc.New(watch.New(kv))
+	handlers := rpc.New(kv)
 	grpcServer := grpc.NewServer()
 	gen.RegisterKVServer(grpcServer, handlers)
 
