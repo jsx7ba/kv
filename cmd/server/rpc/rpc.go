@@ -2,15 +2,18 @@ package rpc
 
 import (
 	"context"
+	"google.golang.org/protobuf/types/known/anypb"
 	"kv/internal/gen"
 	"kv/internal/service"
 	"kv/pkg/anyval"
+	"kv/pkg/watch"
 	"log/slog"
 )
 
 type GRPCHandlers struct {
 	gen.UnimplementedKVServer
 	kv service.KVService
+	// TODO: add done channel
 }
 
 func New(service service.KVService) *GRPCHandlers {
@@ -65,4 +68,37 @@ func (h *GRPCHandlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Res
 		status = gen.Status_ERROR
 	}
 	return &gen.Response{Status: status}, nil
+}
+
+func (h *GRPCHandlers) Watch(r *gen.WatchRequest, server gen.KV_WatchServer) error {
+	watchChan, cancelFunc := h.kv.AddWatch(r.Key, watch.Operation(r.GetWatchType()))
+	defer cancelFunc()
+
+	var err error
+out:
+	for {
+		select {
+		case update := <-watchChan:
+			var v *anypb.Any
+			if update.Value != nil {
+				v, err = anyval.Marshal(update.Value)
+				if err != nil {
+					break out
+				}
+			}
+
+			m := gen.WatchResponse{
+				WatchType: update.Op.Convert(),
+				Key:       update.Key,
+				Value:     v,
+			}
+
+			err = server.SendMsg(&m)
+			if err != nil {
+				slog.Error("sending watch response failed", "err", err)
+				break out
+			}
+		}
+	}
+	return err
 }

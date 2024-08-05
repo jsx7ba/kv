@@ -7,15 +7,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"kv/pkg/client/rpc"
+	"kv/pkg/watch"
 	"log"
 	"os"
 	"time"
 )
 
 var (
-	op  = flag.String("op", "", "[get|put|del]")
-	key = flag.String("k", "", "key name")
-	val = flag.String("v", "", "value")
+	op        = flag.String("op", "", "[get|put|del|watch]")
+	key       = flag.String("k", "", "key name")
+	val       = flag.String("v", "", "value")
+	watchType = flag.String("t", "", "watch type")
 )
 
 func main() {
@@ -43,6 +45,16 @@ func main() {
 	case "del":
 		err := client.Delete(ctx, *key)
 		checkError(err)
+	case "watch":
+		watchType, err := watch.OperationFromString(*watchType)
+		checkError(err)
+
+		ch, err := client.Watch(context.Background(), *key, watchType)
+		checkError(err)
+
+		for update := range ch {
+			log.Printf("%+v", update)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "error parsing command line\n")
 		os.Exit(1)

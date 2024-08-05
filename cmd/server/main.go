@@ -9,6 +9,7 @@ import (
 	"kv/internal/gen"
 	"kv/internal/service"
 	"kv/internal/service/singlelock"
+	"kv/internal/service/watch"
 	"log"
 	"net"
 	"net/http"
@@ -42,7 +43,7 @@ func runGrpc(kv service.KVService, done chan struct{}, address string) {
 	}
 	defer listener.Close()
 
-	handlers := rpc.New(kv)
+	handlers := rpc.New(watch.New(kv))
 	grpcServer := grpc.NewServer()
 	gen.RegisterKVServer(grpcServer, handlers)
 

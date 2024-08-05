@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"kv/internal/gen"
 	"kv/pkg/anyval"
+	"kv/pkg/watch"
+	"log/slog"
 )
 
 type Client struct {
@@ -77,6 +79,42 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return err
 }
 
-//func (c *GRPCClient) Watch(ctx context.Context, key string) error {
-//
-//}
+func (c *Client) Watch(ctx context.Context, key string, operation watch.Operation) (chan watch.Update, error) {
+	req := gen.WatchRequest{
+		Key:       key,
+		WatchType: operation.Convert(),
+	}
+
+	watchClient, err := c.kvc.Watch(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	updateChan := make(chan watch.Update)
+
+	go func() {
+		response := gen.WatchResponse{}
+		for {
+			err := watchClient.RecvMsg(&response)
+			if err != nil {
+				break
+			}
+
+			v, err := anyval.Unmarshal(response.Value)
+			if err != nil {
+				slog.Error("unmarshal value failed", "err", err)
+				continue
+			}
+
+			updateChan <- watch.Update{
+				Op:    watch.OperationFrom(response.WatchType),
+				Key:   response.Key,
+				Value: v,
+			}
+
+			response.Reset()
+		}
+	}()
+
+	return updateChan, nil
+}

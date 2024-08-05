@@ -3,6 +3,7 @@ package singlelock
 import (
 	"errors"
 	"fmt"
+	"kv/pkg/watch"
 	"sync"
 )
 
@@ -49,4 +50,8 @@ func (kv *KVService) Delete(key string) error {
 		err = errors.New(fmt.Sprintf("key [%s] not found", key))
 	}
 	return err
+}
+
+func (kv *KVService) AddWatch(_ string, _ watch.Operation) (chan watch.Update, func()) {
+	panic("not implemented")
 }
