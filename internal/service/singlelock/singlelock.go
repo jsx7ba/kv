@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// KVService is a simplistic key value store.
 type KVService struct {
 	m     sync.RWMutex
 	store map[string]interface{}
