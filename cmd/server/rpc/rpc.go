@@ -10,20 +10,20 @@ import (
 	"log/slog"
 )
 
-type GRPCHandlers struct {
+type Handlers struct {
 	gen.UnimplementedKVServer
 	kv service.KVService
 	// TODO: add done channel
 }
 
-func New(service service.KVService) *GRPCHandlers {
-	return &GRPCHandlers{
+func New(service service.KVService) *Handlers {
+	return &Handlers{
 		UnimplementedKVServer: gen.UnimplementedKVServer{},
 		kv:                    service,
 	}
 }
 
-func (h *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response, error) {
+func (h *Handlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response, error) {
 	response := &gen.Response{Status: gen.Status_ERROR}
 	value, err := anyval.Unmarshal(r.GetValue())
 	if err != nil {
@@ -42,7 +42,7 @@ func (h *GRPCHandlers) Put(_ context.Context, r *gen.PutRequest) (*gen.Response,
 	return response, err
 }
 
-func (h *GRPCHandlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetResponse, error) {
+func (h *Handlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetResponse, error) {
 	response := &gen.GetResponse{Status: gen.Status_ERROR}
 	v, err := h.kv.Get(r.Key)
 
@@ -60,7 +60,7 @@ func (h *GRPCHandlers) Get(_ context.Context, r *gen.GetRequest) (*gen.GetRespon
 	return response, err
 }
 
-func (h *GRPCHandlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Response, error) {
+func (h *Handlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Response, error) {
 	err := h.kv.Delete(r.Key)
 
 	status := gen.Status_OK
@@ -70,7 +70,7 @@ func (h *GRPCHandlers) Delete(_ context.Context, r *gen.DeleteRequest) (*gen.Res
 	return &gen.Response{Status: status}, nil
 }
 
-func (h *GRPCHandlers) Watch(r *gen.WatchRequest, server gen.KV_WatchServer) error {
+func (h *Handlers) Watch(r *gen.WatchRequest, server gen.KV_WatchServer) error {
 	watchChan, cancelFunc := h.kv.AddWatch(r.Key, watch.Operation(r.GetWatchType()))
 	defer cancelFunc()
 
