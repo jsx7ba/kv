@@ -5,13 +5,15 @@ Cleverly named `kv`.  KV is a learning project, and is very much a work in progr
 - [x] Protocol Buffers
 - [x] GRPC 
 - [x] REST
-- [ ] Find better package structure for rpc
 - [ ] Watch API
+  - [ ] Client needs to close when server dies
+  - [ ] Server needs to cancel the watch when client disconnects
+  - [ ] Http long polling
 - [ ] More tests
 - [ ] Comments
 
 ## Stage 2
-- [ ] Different kv service implementations
+- [X] Different kv service implementations
 - [ ] Distributed coordination
 
 ## Stage 3
