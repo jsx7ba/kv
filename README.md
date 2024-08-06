@@ -1,3 +1,5 @@
+![](https://github.com/jsx7ba/kv/actions/workflows/main.yml/badge.svg)
+
 # A Key Value Service
 Cleverly named `kv`.  KV is a learning project, and is very much a work in progress.
 
