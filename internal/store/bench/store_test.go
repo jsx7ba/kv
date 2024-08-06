@@ -2,10 +2,10 @@ package bench
 
 import (
 	"fmt"
-	"kv/internal/service"
-	"kv/internal/service/multilock"
-	"kv/internal/service/singlelock"
-	"kv/internal/service/syncmap"
+	"kv/internal/store"
+	"kv/internal/store/multilock"
+	"kv/internal/store/singlelock"
+	"kv/internal/store/syncmap"
 	"log"
 	"sync"
 	"testing"
@@ -48,11 +48,11 @@ var (
 	iterations = []int{100, 1000, 10000}
 )
 
-func basicKV() service.KVStore {
+func basicKV() store.KVStore {
 	return singlelock.New()
 }
 
-func syncmapKV() service.KVStore {
+func syncmapKV() store.KVStore {
 	return syncmap.New()
 }
 
@@ -94,7 +94,7 @@ func BenchmarkMultikeyService(b *testing.B) {
 	}
 }
 
-func benchmarkDriver(kv service.KVStore, b *testing.B) {
+func benchmarkDriver(kv store.KVStore, b *testing.B) {
 	wg := sync.WaitGroup{}
 	wg.Add(b.N * 2)
 
@@ -105,7 +105,7 @@ func benchmarkDriver(kv service.KVStore, b *testing.B) {
 	wg.Wait()
 }
 
-func concurrentPut(kv service.KVStore, idx int, wg *sync.WaitGroup) {
+func concurrentPut(kv store.KVStore, idx int, wg *sync.WaitGroup) {
 	di := idx % len(data)
 	err := kv.Put(data[di][0], data[di][1])
 	if err != nil {
@@ -114,7 +114,7 @@ func concurrentPut(kv service.KVStore, idx int, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func concurrentGet(kv service.KVStore, idx int, wg *sync.WaitGroup) {
+func concurrentGet(kv store.KVStore, idx int, wg *sync.WaitGroup) {
 	di := idx % len(data)
 	_, _ = kv.Get(data[di][0])
 	wg.Done()

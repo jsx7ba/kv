@@ -4,7 +4,7 @@ import (
 	"context"
 	"google.golang.org/protobuf/types/known/anypb"
 	"kv/internal/gen"
-	"kv/internal/service"
+	"kv/internal/store"
 	"kv/pkg/anyval"
 	"kv/pkg/watch"
 	"log/slog"
@@ -12,10 +12,10 @@ import (
 
 type Handlers struct {
 	gen.UnimplementedKVServer
-	kv service.KVStore
+	kv store.KVStore
 }
 
-func New(service service.KVStore) *Handlers {
+func New(service store.KVStore) *Handlers {
 	return &Handlers{
 		UnimplementedKVServer: gen.UnimplementedKVServer{},
 		kv:                    service,

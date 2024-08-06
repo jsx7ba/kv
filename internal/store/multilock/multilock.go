@@ -1,20 +1,20 @@
 package multilock
 
 import (
-	"kv/internal/service"
+	"kv/internal/store"
 	"kv/pkg/watch"
 )
 
 // MultiKVStore Implements KVStore and divides the keyspace.  This will prevent one write from locking
-// the whole service.
+// the whole store.
 type MultiKVStore struct {
 	size   int
-	store  []service.KVStore
+	store  []store.KVStore
 	hasher func(buckets int, key string) int
 }
 
-func New(bucketCount int, factory func() service.KVStore, hashFunc func(buckets int, key string) int) *MultiKVStore {
-	buckets := make([]service.KVStore, bucketCount)
+func New(bucketCount int, factory func() store.KVStore, hashFunc func(buckets int, key string) int) *MultiKVStore {
+	buckets := make([]store.KVStore, bucketCount)
 	for i := 0; i != bucketCount; i++ {
 		buckets[i] = factory()
 	}

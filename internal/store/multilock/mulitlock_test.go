@@ -1,9 +1,9 @@
 package multilock
 
 import (
-	"kv/internal/service"
-	"kv/internal/service/singlelock"
-	w "kv/internal/service/watch"
+	"kv/internal/store"
+	"kv/internal/store/singlelock"
+	w "kv/internal/store/watch"
 	"kv/pkg/watch"
 	"testing"
 )
@@ -23,7 +23,7 @@ var (
 	}
 )
 
-func basicKV() service.KVStore {
+func basicKV() store.KVStore {
 	return singlelock.New()
 }
 
@@ -67,7 +67,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func watchingKV() service.KVStore {
+func watchingKV() store.KVStore {
 	return w.New(basicKV())
 }
 

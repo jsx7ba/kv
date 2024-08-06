@@ -1,7 +1,7 @@
 package watch
 
 import (
-	"kv/internal/service"
+	"kv/internal/store"
 	"kv/pkg/watch"
 	"log/slog"
 	"sync"
@@ -10,7 +10,7 @@ import (
 // KVStoreWatcher wraps a KVStore, and sends changes to channels associated with a specific key and operation.
 type KVStoreWatcher struct {
 	lock          sync.RWMutex
-	service       service.KVStore
+	service       store.KVStore
 	subscriptions map[subscription][]chan watch.Update
 }
 
@@ -19,7 +19,7 @@ type subscription struct {
 	Op  watch.Operation
 }
 
-func New(service service.KVStore) service.KVStore {
+func New(service store.KVStore) store.KVStore {
 	return &KVStoreWatcher{
 		lock:          sync.RWMutex{},
 		service:       service,

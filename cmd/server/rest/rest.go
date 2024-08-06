@@ -3,16 +3,16 @@ package rest
 import (
 	"encoding/json"
 	"io"
-	"kv/internal/service"
+	"kv/internal/store"
 	"log/slog"
 	"net/http"
 )
 
 type Handlers struct {
-	kv service.KVStore
+	kv store.KVStore
 }
 
-func New(kv service.KVStore) *Handlers {
+func New(kv store.KVStore) *Handlers {
 	return &Handlers{
 		kv: kv,
 	}

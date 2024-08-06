@@ -7,10 +7,10 @@ import (
 	"kv/cmd/server/rest"
 	"kv/cmd/server/rpc"
 	"kv/internal/gen"
-	"kv/internal/service"
-	"kv/internal/service/multilock"
-	"kv/internal/service/singlelock"
-	"kv/internal/service/watch"
+	"kv/internal/store"
+	"kv/internal/store/multilock"
+	"kv/internal/store/singlelock"
+	"kv/internal/store/watch"
 	"log"
 	"net"
 	"net/http"
@@ -36,11 +36,11 @@ func main() {
 	}
 }
 
-func watchingKV() service.KVStore {
+func watchingKV() store.KVStore {
 	return watch.New(singlelock.New())
 }
 
-func runGrpc(kv service.KVStore, done chan struct{}, address string) {
+func runGrpc(kv store.KVStore, done chan struct{}, address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)
@@ -64,7 +64,7 @@ func runGrpc(kv service.KVStore, done chan struct{}, address string) {
 	}
 }
 
-func runHttp(kv service.KVStore, done chan struct{}, address string) {
+func runHttp(kv store.KVStore, done chan struct{}, address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)
