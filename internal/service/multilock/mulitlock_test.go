@@ -8,12 +8,8 @@ import (
 	"testing"
 )
 
-func basicKV() service.KVService {
-	return singlelock.New()
-}
-
-func TestRoundTrip(t *testing.T) {
-	data := [][]string{
+var (
+	data = [][]string{
 		{"encouraging", "texture"},
 		{"ashamed", "toes"},
 		{"abortive", "badge"},
@@ -25,7 +21,13 @@ func TestRoundTrip(t *testing.T) {
 		{"protective", "year"},
 		{"stimulating", "dirt"},
 	}
+)
 
+func basicKV() service.KVStore {
+	return singlelock.New()
+}
+
+func TestRoundTrip(t *testing.T) {
 	mkv := New(13, basicKV, SimpleHashFunc)
 	for i := range data {
 		err := mkv.Put(data[i][0], data[i][1])
@@ -65,7 +67,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func watchingKV() service.KVService {
+func watchingKV() service.KVStore {
 	return w.New(basicKV())
 }
 

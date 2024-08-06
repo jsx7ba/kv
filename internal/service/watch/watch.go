@@ -7,9 +7,10 @@ import (
 	"sync"
 )
 
-type Service struct {
+// KVStoreWatcher wraps a KVStore, and sends changes to channels associated with a specific key and operation.
+type KVStoreWatcher struct {
 	lock          sync.RWMutex
-	service       service.KVService
+	service       service.KVStore
 	subscriptions map[subscription][]chan watch.Update
 }
 
@@ -18,15 +19,15 @@ type subscription struct {
 	Op  watch.Operation
 }
 
-func New(service service.KVService) service.KVService {
-	return &Service{
+func New(service service.KVStore) service.KVStore {
+	return &KVStoreWatcher{
 		lock:          sync.RWMutex{},
 		service:       service,
 		subscriptions: make(map[subscription][]chan watch.Update),
 	}
 }
 
-func (s *Service) Put(key string, value interface{}) error {
+func (s *KVStoreWatcher) Put(key string, value interface{}) error {
 	err := s.service.Put(key, value)
 	if err == nil {
 		update := watch.Update{
@@ -39,11 +40,11 @@ func (s *Service) Put(key string, value interface{}) error {
 	return err
 }
 
-func (s *Service) Get(key string) (interface{}, error) {
+func (s *KVStoreWatcher) Get(key string) (interface{}, error) {
 	return s.service.Get(key)
 }
 
-func (s *Service) Delete(key string) error {
+func (s *KVStoreWatcher) Delete(key string) error {
 	err := s.service.Delete(key)
 	if err != nil {
 		update := watch.Update{
@@ -55,7 +56,7 @@ func (s *Service) Delete(key string) error {
 	return err
 }
 
-func (s *Service) updateWatchers(key string, update watch.Update) {
+func (s *KVStoreWatcher) updateWatchers(key string, update watch.Update) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -71,7 +72,7 @@ func (s *Service) updateWatchers(key string, update watch.Update) {
 	}
 }
 
-func (s *Service) removeWatcher(sub subscription, index int) {
+func (s *KVStoreWatcher) removeWatcher(sub subscription, index int) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	slog.Info("removing watch", "sub", sub)
@@ -86,7 +87,8 @@ func (s *Service) removeWatcher(sub subscription, index int) {
 	}
 }
 
-func (s *Service) AddWatch(key string, op watch.Operation) (chan watch.Update, func()) {
+// TODO: handle the All operation
+func (s *KVStoreWatcher) AddWatch(key string, op watch.Operation) (chan watch.Update, func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

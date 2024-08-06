@@ -9,10 +9,10 @@ import (
 )
 
 type Handlers struct {
-	kv service.KVService
+	kv service.KVStore
 }
 
-func New(kv service.KVService) *Handlers {
+func New(kv service.KVStore) *Handlers {
 	return &Handlers{
 		kv: kv,
 	}

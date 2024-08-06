@@ -36,11 +36,11 @@ func main() {
 	}
 }
 
-func watchingKV() service.KVService {
+func watchingKV() service.KVStore {
 	return watch.New(singlelock.New())
 }
 
-func runGrpc(kv service.KVService, done chan struct{}, address string) {
+func runGrpc(kv service.KVStore, done chan struct{}, address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)
@@ -64,7 +64,7 @@ func runGrpc(kv service.KVService, done chan struct{}, address string) {
 	}
 }
 
-func runHttp(kv service.KVService, done chan struct{}, address string) {
+func runHttp(kv service.KVStore, done chan struct{}, address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)

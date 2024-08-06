@@ -5,16 +5,16 @@ import (
 	"kv/pkg/watch"
 )
 
-// MultiKVStore Implements KVService and divides the keyspace.  This will prevent one write from locking
+// MultiKVStore Implements KVStore and divides the keyspace.  This will prevent one write from locking
 // the whole service.
 type MultiKVStore struct {
 	size   int
-	store  []service.KVService
+	store  []service.KVStore
 	hasher func(buckets int, key string) int
 }
 
-func New(bucketCount int, factory func() service.KVService, hashFunc func(buckets int, key string) int) *MultiKVStore {
-	buckets := make([]service.KVService, bucketCount)
+func New(bucketCount int, factory func() service.KVStore, hashFunc func(buckets int, key string) int) *MultiKVStore {
+	buckets := make([]service.KVStore, bucketCount)
 	for i := 0; i != bucketCount; i++ {
 		buckets[i] = factory()
 	}

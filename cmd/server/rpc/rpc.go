@@ -12,10 +12,10 @@ import (
 
 type Handlers struct {
 	gen.UnimplementedKVServer
-	kv service.KVService
+	kv service.KVStore
 }
 
-func New(service service.KVService) *Handlers {
+func New(service service.KVStore) *Handlers {
 	return &Handlers{
 		UnimplementedKVServer: gen.UnimplementedKVServer{},
 		kv:                    service,
