@@ -13,6 +13,7 @@ Cleverly named `kv`.  KV is a learning project, and is very much a work in progr
   - [ ] Http long polling
 - [ ] More tests
 - [ ] Comments
+- [ ] Improve server error handling so 404 can be distinguished from 500
 
 ## Stage 2
 - [X] Different kv service implementations
