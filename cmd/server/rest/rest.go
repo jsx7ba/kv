@@ -68,6 +68,7 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	err := h.kv.Delete(key)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
