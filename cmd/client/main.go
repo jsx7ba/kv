@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"kv/pkg/client/rpc"
+	"kv/pkg/client"
 	"kv/pkg/watch"
 	"log"
 	"os"
@@ -23,33 +24,29 @@ var (
 func main() {
 	flag.Parse()
 
-	conn, err := grpc.NewClient("127.0.0.1:2000", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-
-	client := rpc.New(conn)
+	kv, cancel, err := configureTransport()
+	checkError(err)
+	defer cancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	switch *op {
 	case "get":
-		value, err := client.Get(ctx, *key)
+		value, err := kv.Get(ctx, *key)
 		checkError(err)
 		fmt.Printf("%+v\n", value)
 	case "put":
-		err := client.Put(ctx, *key, *val)
+		err := kv.Put(ctx, *key, *val)
 		checkError(err)
 	case "del":
-		err := client.Delete(ctx, *key)
+		err := kv.Delete(ctx, *key)
 		checkError(err)
 	case "watch":
 		watchType, err := watch.OperationFromString(*watchType)
 		checkError(err)
 
-		ch, err := client.Watch(context.Background(), *key, watchType)
+		ch, err := kv.Watch(context.Background(), *key, watchType)
 		checkError(err)
 
 		for update := range ch {
@@ -69,4 +66,28 @@ func checkError(err error) {
 	}
 	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	os.Exit(1)
+}
+
+func configureTransport() (client.KV, func(), error) {
+	name := os.Getenv("KV_TRANSPORT")
+	var kv client.KV
+	cancel := func() {}
+	var err error
+
+	if name == "rest" {
+		kv = client.NewRest("127.0.0.1:2500")
+	} else if len(name) == 0 || name == "grpc" {
+		conn, err := grpc.NewClient("127.0.0.1:2000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		cancel = func() {
+			conn.Close()
+		}
+		kv = client.NewGRPC(conn)
+	} else {
+		err = errors.New("unknown transport: " + name)
+	}
+	return kv, cancel, err
+
 }

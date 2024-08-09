@@ -58,3 +58,8 @@ func (o Operation) Convert() gen.OpType {
 	}
 	return optype
 }
+
+type WatchRequest struct {
+	Key       string    `json:"key"`
+	WatchType Operation `json:"watchType"`
+}

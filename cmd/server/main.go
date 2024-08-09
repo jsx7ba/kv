@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"kv/cmd/server/rest"
 	"kv/cmd/server/rpc"
@@ -12,6 +11,7 @@ import (
 	"kv/internal/store/singlelock"
 	"kv/internal/store/watch"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -73,9 +73,10 @@ func runHttp(kv store.KVStore, done chan struct{}, address string) {
 	defer listener.Close()
 
 	h := rest.New(kv)
-	http.HandleFunc("POST /kv/{key}", h.Put)
+	http.HandleFunc("POST /kv/", h.Put)
 	http.HandleFunc("GET /kv/{key}", h.Get)
 	http.HandleFunc("DELETE /kv/{key}", h.Delete)
+	http.HandleFunc("POST /watch/", h.Delete)
 
 	errChan := make(chan error)
 	s := &http.Server{}

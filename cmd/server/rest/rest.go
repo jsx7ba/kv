@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"kv/internal/store"
+	"kv/pkg/rest"
+	"kv/pkg/watch"
 	"log/slog"
 	"net/http"
 )
@@ -19,21 +21,15 @@ func New(kv store.KVStore) *Handlers {
 }
 
 func (h *Handlers) Put(w http.ResponseWriter, r *http.Request) {
-	key := r.PathValue("key")
-	if len(key) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	bytes, err := readBody(r)
-	put := PutRequest{}
+	put := rest.PutRequest{}
 	err = json.Unmarshal(bytes, &put)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = h.kv.Put(key, put.Value)
+	err = h.kv.Put(put.Key, put.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -55,7 +51,7 @@ func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doc := GetResponse{
+	doc := rest.GetResponse{
 		Key:   key,
 		Value: value,
 	}
@@ -69,7 +65,43 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	err := h.kv.Delete(key)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handlers) Watch(w http.ResponseWriter, r *http.Request) {
+	watchReq := watch.WatchRequest{}
+	b, err := readBody(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = json.Unmarshal(b, &watchReq)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	updateChan, cancel := h.kv.AddWatch(watchReq.Key, watchReq.WatchType)
+	defer cancel()
+
+	for update := range updateChan {
+		b, err = json.Marshal(update)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			break
+		}
+
+		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			break
+		}
+	}
 }
 
 func readBody(r *http.Request) ([]byte, error) {
@@ -91,21 +123,4 @@ func writeJsonResponse(w http.ResponseWriter, value interface{}) {
 	if err != nil {
 		slog.Error("failed to write json response", err)
 	}
-}
-
-type PutRequest struct {
-	Value interface{} `json:"value"`
-}
-
-type GetResponse struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
-}
-
-type GetRequest struct {
-	Key string `json:"key"`
-}
-
-type DeleteRequest struct {
-	Key string `json:"key"`
 }

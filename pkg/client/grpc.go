@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"log/slog"
 )
 
-type Client struct {
+type GPRCClient struct {
 	kvc gen.KVClient
 }
 
-func New(conn *grpc.ClientConn) *Client {
-	return &Client{
+func NewGRPC(conn *grpc.ClientConn) *GPRCClient {
+	return &GPRCClient{
 		kvc: gen.NewKVClient(conn),
 	}
 }
 
-func (c *Client) Get(ctx context.Context, key string) (interface{}, error) {
+func (c *GPRCClient) Get(ctx context.Context, key string) (interface{}, error) {
 	req := gen.GetRequest{
 		Key: key,
 	}
@@ -41,7 +41,7 @@ func (c *Client) Get(ctx context.Context, key string) (interface{}, error) {
 	return remoteVal, err
 }
 
-func (c *Client) Put(ctx context.Context, key string, val interface{}) error {
+func (c *GPRCClient) Put(ctx context.Context, key string, val interface{}) error {
 	anyVal, err := anyval.Marshal(val)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (c *Client) Put(ctx context.Context, key string, val interface{}) error {
 	return err
 }
 
-func (c *Client) Delete(ctx context.Context, key string) error {
+func (c *GPRCClient) Delete(ctx context.Context, key string) error {
 	req := gen.DeleteRequest{
 		Key: key,
 	}
@@ -79,7 +79,7 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return err
 }
 
-func (c *Client) Watch(ctx context.Context, key string, operation watch.Operation) (chan watch.Update, error) {
+func (c *GPRCClient) Watch(ctx context.Context, key string, operation watch.Operation) (chan watch.Update, error) {
 	req := gen.WatchRequest{
 		Key:       key,
 		WatchType: operation.Convert(),
