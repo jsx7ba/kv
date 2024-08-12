@@ -74,6 +74,7 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) Watch(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("/watch", "host", r.Host)
 	watchReq := watch.WatchRequest{}
 	b, err := readBody(r)
 	if err != nil {
@@ -90,19 +91,8 @@ func (h *Handlers) Watch(w http.ResponseWriter, r *http.Request) {
 	updateChan, cancel := h.kv.AddWatch(watchReq.Key, watchReq.WatchType)
 	defer cancel()
 
-	for update := range updateChan {
-		b, err = json.Marshal(update)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			break
-		}
-
-		_, err = w.Write(b)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			break
-		}
-	}
+	w.Header().Set("Cache-Control", "no-cache")
+	writeJsonResponse(w, <-updateChan)
 }
 
 func readBody(r *http.Request) ([]byte, error) {

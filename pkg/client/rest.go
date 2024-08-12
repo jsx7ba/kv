@@ -9,6 +9,7 @@ import (
 	"io"
 	"kv/pkg/rest"
 	"kv/pkg/watch"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -94,7 +95,6 @@ func (kv *RestClient) Watch(ctx context.Context, key string, operation watch.Ope
 	if err != nil {
 		return nil, err
 	}
-	bytesBuff := bytes.NewBuffer(b)
 
 	watchClient := http.Client{
 		Timeout: 0, // no timeout
@@ -105,6 +105,7 @@ func (kv *RestClient) Watch(ctx context.Context, key string, operation watch.Ope
 	go func() {
 		defer close(watchChan)
 		for {
+			bytesBuff := bytes.NewBuffer(b)
 			req, err := http.NewRequestWithContext(ctx, "POST", makeWatchUrl(kv.url), bytesBuff)
 			if err != nil {
 				break
@@ -112,15 +113,26 @@ func (kv *RestClient) Watch(ctx context.Context, key string, operation watch.Ope
 
 			resp, err := watchClient.Do(req)
 			if err != nil {
-
+				log.Printf("watch request failed: %+v\n", err)
+				return
+			} else if resp.StatusCode != 200 {
+				log.Printf("watch request failed: %s\n", resp.Status)
+				return
 			}
 
 			respBytes, err := io.ReadAll(resp.Body)
 			if err != nil {
 				break
 			}
+			resp.Body.Close()
+
 			update := watch.Update{}
 			err = json.Unmarshal(respBytes, &update)
+			if err != nil {
+				log.Printf("decoding json failed: %+v\n", err)
+				break
+			}
+			watchChan <- update
 		}
 	}()
 

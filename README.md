@@ -10,7 +10,8 @@ Cleverly named `kv`.  KV is a learning project, and is very much a work in progr
 - [ ] Watch API
   - [x] Client needs to close when server dies
   - [x] Server needs to cancel the watch when client disconnects
-  - [ ] Http long polling
+  - [X] Http long polling
+  - [ ] Implement 'All' watch type
 - [ ] More tests
 - [ ] Comments
 - [ ] Improve server error handling so 404 can be distinguished from 500

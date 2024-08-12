@@ -76,7 +76,7 @@ func runHttp(kv store.KVStore, done chan struct{}, address string) {
 	http.HandleFunc("POST /kv/", h.Put)
 	http.HandleFunc("GET /kv/{key}", h.Get)
 	http.HandleFunc("DELETE /kv/{key}", h.Delete)
-	http.HandleFunc("POST /watch/", h.Delete)
+	http.HandleFunc("POST /watch", h.Watch)
 
 	errChan := make(chan error)
 	s := &http.Server{}
