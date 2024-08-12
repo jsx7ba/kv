@@ -8,7 +8,7 @@ import (
 type Operation int
 
 const (
-	All Operation = iota
+	All Operation = iota + 1
 	Put
 	Delete
 )
@@ -53,6 +53,8 @@ func (o Operation) Convert() gen.OpType {
 		optype = gen.OpType_PUT
 	case Delete:
 		optype = gen.OpType_DELETE
+	case All:
+		optype = gen.OpType_ALL
 	default:
 		panic("unknown Operation type")
 	}

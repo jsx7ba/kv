@@ -30,9 +30,10 @@ message DeleteRequest {
 }
 
 enum OpType {
-    ALL = 0;
-    PUT = 1;
-    DELETE = 2;
+    UNSPECIFIED = 0;
+    ALL = 1;
+    PUT = 2;
+    DELETE = 3;
 }
 
 message WatchRequest {
