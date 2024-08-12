@@ -7,11 +7,31 @@ import (
 	"sync"
 )
 
+type set map[chan watch.Update]struct{}
+
+func (s set) put(c chan watch.Update) {
+	s[c] = struct{}{}
+}
+
+func (s set) del(c chan watch.Update) {
+	delete(s, c)
+}
+
+func (s set) empty() bool {
+	return len(s) == 0
+}
+
+func (s set) forEach(f func(c chan watch.Update)) {
+	for k, _ := range s {
+		f(k)
+	}
+}
+
 // KVStoreWatcher wraps a KVStore, and sends changes to channels associated with a specific key and operation.
 type KVStoreWatcher struct {
 	lock          sync.RWMutex
 	service       store.KVStore
-	subscriptions map[subscription][]chan watch.Update
+	subscriptions map[subscription]set
 }
 
 type subscription struct {
@@ -23,7 +43,7 @@ func New(service store.KVStore) store.KVStore {
 	return &KVStoreWatcher{
 		lock:          sync.RWMutex{},
 		service:       service,
-		subscriptions: make(map[subscription][]chan watch.Update),
+		subscriptions: make(map[subscription]set),
 	}
 }
 
@@ -46,7 +66,7 @@ func (s *KVStoreWatcher) Get(key string) (interface{}, error) {
 
 func (s *KVStoreWatcher) Delete(key string) error {
 	err := s.service.Delete(key)
-	if err != nil {
+	if err == nil {
 		update := watch.Update{
 			Key: key,
 			Op:  watch.Delete,
@@ -65,46 +85,71 @@ func (s *KVStoreWatcher) updateWatchers(key string, update watch.Update) {
 		Op:  update.Op,
 	}
 
+	updateFunc := func(c chan watch.Update) {
+		c <- update
+	}
+
 	if watchers, ok := s.subscriptions[sub]; ok {
-		for _, w := range watchers {
-			w <- update
-		}
+		watchers.forEach(updateFunc)
 	}
 }
 
-func (s *KVStoreWatcher) removeWatcher(sub subscription, index int) {
+func (s *KVStoreWatcher) removeWatcher(sub subscription, c chan watch.Update) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	slog.Info("removing watch", "sub", sub)
 	if watchers, ok := s.subscriptions[sub]; ok {
-		if len(watchers)-1 <= index {
-			close(watchers[index])
-			watchers = append(watchers[:index], watchers[index+1:]...)
-			if len(watchers) == 0 {
-				delete(s.subscriptions, sub)
-			}
+		watchers.del(c)
+		close(c)
+		if watchers.empty() {
+			delete(s.subscriptions, sub)
 		}
 	}
 }
 
-// TODO: handle the All operation
 func (s *KVStoreWatcher) AddWatch(key string, op watch.Operation) (chan watch.Update, func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	if op != watch.All {
+		return s.watchImpl(key, op)
+	}
+
+	// make two subscriptions, and combine the channels and cancel func
+	updateChan := make(chan watch.Update)
+	done := make(chan struct{})
+	putChan, putCancel := s.watchImpl(key, watch.Put)
+	delChan, delCancel := s.watchImpl(key, watch.Delete)
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case u := <-putChan:
+				updateChan <- u
+			case u := <-delChan:
+				updateChan <- u
+			}
+		}
+	}()
+
+	cancelFunc := func() {
+		close(done)
+		putCancel()
+		delCancel()
+	}
+	return updateChan, cancelFunc
+}
+
+func (s *KVStoreWatcher) watchImpl(key string, op watch.Operation) (chan watch.Update, func()) {
 	sub := subscription{
 		Key: key,
 		Op:  op,
 	}
-
 	updateChan := make(chan watch.Update)
 	if _, ok := s.subscriptions[sub]; !ok {
-		s.subscriptions[sub] = make([]chan watch.Update, 1)
-		s.subscriptions[sub][0] = updateChan
-	} else {
-		s.subscriptions[sub] = append(s.subscriptions[sub], updateChan)
+		s.subscriptions[sub] = make(set)
 	}
-
-	idx := len(s.subscriptions) - 1
-	return updateChan, func() { s.removeWatcher(sub, idx) }
+	s.subscriptions[sub].put(updateChan)
+	return updateChan, func() { s.removeWatcher(sub, updateChan) }
 }

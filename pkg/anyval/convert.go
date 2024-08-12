@@ -115,6 +115,10 @@ func UnmarshalType[T ConvertableType](anyVal *anypb.Any) (T, error) {
 }
 
 func unmarshal(anyVal *anypb.Any) (interface{}, error) {
+	if anyVal == nil {
+		return nil, nil
+	}
+
 	m, err := anyVal.UnmarshalNew()
 	if err != nil {
 		return nil, err
