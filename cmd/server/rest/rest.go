@@ -112,6 +112,6 @@ func writeJsonResponse(w http.ResponseWriter, value interface{}) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(bytes)
 	if err != nil {
-		slog.Error("failed to write json response", err)
+		slog.Error("failed to write json response", "err", err)
 	}
 }
