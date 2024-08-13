@@ -1,52 +1,45 @@
 package bench
 
 import (
+	"bytes"
 	"fmt"
 	"kv/internal/store"
 	"kv/internal/store/multilock"
 	"kv/internal/store/singlelock"
 	"kv/internal/store/syncmap"
 	"log"
+	"math/rand"
 	"sync"
 	"testing"
 )
 
 var (
-	data = [][]string{
-		{"encouraging", "texture"},
-		{"ashamed", "toes"},
-		{"abortive", "badge"},
-		{"well-to-do", "quiver"},
-		{"zonked", "step"},
-		{"cute", "idea"},
-		{"windy", "meal"},
-		{"complete", "snail"},
-		{"protective", "year"},
-		{"stimulating", "dirt"},
-		{"plough", "representative"},
-		{"brush", "hope"},
-		{"oatmeal", "sun"},
-		{"jeans", "burn"},
-		{"fight", "vest"},
-		{"self", "ice"},
-		{"disease", "brake"},
-		{"friends", "texture"},
-		{"bulb", "push"},
-		{"thing", "scale"},
-		{"cattle", "cakes"},
-		{"pickle", "purpose"},
-		{"cars", "crime"},
-		{"cannon", "class"},
-		{"skirt", "sleet"},
-		{"pen", "partner"},
-		{"rhythm", "root"},
-		{"noise", "name"},
-		{"pot", "protest"},
-		{"surprise", "song"},
-	}
-
-	iterations = []int{100, 1000, 10000}
+	data       [][]string
+	iterations = []int{100, 1000, 10_000, 100_000, 1_000_000}
 )
+
+func init() {
+	size := 100_000
+	if data == nil {
+		r := rand.New(rand.NewSource(3))
+		data = make([][]string, size)
+		for i := range size {
+			data[i] = make([]string, 2)
+			data[i][0] = randomString(r, 5, 124)
+			data[i][0] = randomString(r, 100, 100_000)
+		}
+	}
+}
+
+func randomString(r *rand.Rand, min, max uint32) string {
+	keyLen := (r.Uint32() % (max - min)) + min
+	buffer := bytes.Buffer{}
+	for range keyLen {
+		b := (r.Uint32() % 93) + 33 // random unsigned int between 33 and 126
+		buffer.WriteByte(byte(b))
+	}
+	return buffer.String()
+}
 
 func basicKV() store.KVStore {
 	return singlelock.New()
