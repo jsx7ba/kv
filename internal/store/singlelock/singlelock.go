@@ -7,27 +7,27 @@ import (
 	"sync"
 )
 
-// KVService is a simplistic key value store.
-type KVService struct {
+// KVSingleLockMap uses a single lock for the whole key value store.
+type KVSingleLockMap struct {
 	m     sync.RWMutex
 	store map[string]interface{}
 }
 
-func New() *KVService {
-	return &KVService{
+func New() *KVSingleLockMap {
+	return &KVSingleLockMap{
 		m:     sync.RWMutex{},
 		store: make(map[string]interface{}),
 	}
 }
 
-func (kv *KVService) Put(key string, value interface{}) error {
+func (kv *KVSingleLockMap) Put(key string, value interface{}) error {
 	kv.m.Lock()
 	defer kv.m.Unlock()
 	kv.store[key] = value
 	return nil
 }
 
-func (kv *KVService) Get(key string) (interface{}, error) {
+func (kv *KVSingleLockMap) Get(key string) (interface{}, error) {
 	kv.m.RLock()
 	defer kv.m.RUnlock()
 	v, ok := kv.store[key]
@@ -40,7 +40,7 @@ func (kv *KVService) Get(key string) (interface{}, error) {
 	return v, err
 }
 
-func (kv *KVService) Delete(key string) error {
+func (kv *KVSingleLockMap) Delete(key string) error {
 	kv.m.Lock()
 	defer kv.m.Unlock()
 	_, ok := kv.store[key]
@@ -53,6 +53,6 @@ func (kv *KVService) Delete(key string) error {
 	return err
 }
 
-func (kv *KVService) AddWatch(_ string, _ watch.Operation) (chan watch.Update, func()) {
+func (kv *KVSingleLockMap) AddWatch(_ string, _ watch.Operation) (chan watch.Update, func()) {
 	panic("not implemented")
 }
