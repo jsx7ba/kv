@@ -16,7 +16,7 @@ client: bindir
 	go build -o bin/kvclient cmd/client/main.go
 
 server: bindir
-	go build -o bin/kvserve cmd/server/main.go
+	go build -o bin/kvserve cmd/server/*.go
 
 clean:
 	rm -fr ./bin
