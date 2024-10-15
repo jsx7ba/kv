@@ -11,20 +11,28 @@ import (
 	"kv/pkg/watch"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
+// ./kvclient put grpc://127.0.0.0:2510 -k asdf -v asdf
+
 var (
+	host      = flag.String("h", os.Getenv("KV_HOST"), "[http|grpc]://host:port")
 	op        = flag.String("op", "", "[get|put|del|watch]")
 	key       = flag.String("k", "", "key name")
 	val       = flag.String("v", "", "value")
 	watchType = flag.String("t", "", "watch type")
 )
 
+const (
+	default_http = "127.0.0.1:2500"
+	default_grpc = "127.0.0.1:2510"
+)
+
 func main() {
 	flag.Parse()
-
-	kv, cancel, err := configureTransport()
+	kv, cancel, err := configureTransport(*host)
 	checkError(err)
 	defer cancel()
 
@@ -53,7 +61,7 @@ func main() {
 			log.Printf("%+v", update)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "error parsing command line\n")
+		fmt.Fprintf(os.Stderr, "error parsing command line: %s\n", *op)
 		os.Exit(1)
 	}
 
@@ -68,16 +76,28 @@ func checkError(err error) {
 	os.Exit(1)
 }
 
-func configureTransport() (client.KV, func(), error) {
-	name := os.Getenv("KV_TRANSPORT")
+func configureTransport(hostUrl string) (client.KV, func(), error) {
+	if len(hostUrl) == 0 {
+		hostUrl = default_grpc
+		log.Printf("using %s\n", hostUrl)
+	}
+
+	parts := strings.Split(hostUrl, "://")
+	if len(parts) != 2 {
+		return nil, func() {}, errors.New("invalid transport: " + hostUrl)
+	}
+
+	transport := parts[0]
+	address := parts[1]
+
 	var kv client.KV
 	cancel := func() {}
 	var err error
 
-	if name == "rest" {
-		kv = client.NewRest("127.0.0.1:2500")
-	} else if len(name) == 0 || name == "grpc" {
-		conn, err := grpc.NewClient("127.0.0.1:2000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if transport == "http" {
+		kv = client.NewRest(address)
+	} else if transport == "grpc" {
+		conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)
 		}
@@ -86,7 +106,7 @@ func configureTransport() (client.KV, func(), error) {
 		}
 		kv = client.NewGRPC(conn)
 	} else {
-		err = errors.New("unknown transport: " + name)
+		err = errors.New("unknown transport: " + transport)
 	}
 	return kv, cancel, err
 
