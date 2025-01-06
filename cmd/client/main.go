@@ -15,10 +15,8 @@ import (
 	"time"
 )
 
-// ./kvclient put grpc://127.0.0.0:2510 -k asdf -v asdf
-
 var (
-	host      = flag.String("h", os.Getenv("KV_HOST"), "[http|grpc]://host:port")
+	host      = flag.String("h", "grpc://"+default_grpc, "[http|grpc]://host:port")
 	op        = flag.String("op", "", "[get|put|del|watch]")
 	key       = flag.String("k", "", "key name")
 	val       = flag.String("v", "", "value")
@@ -26,8 +24,8 @@ var (
 )
 
 const (
-	default_http = "127.0.0.1:2500"
-	default_grpc = "127.0.0.1:2510"
+	default_http = "0.0.0.0:2500"
+	default_grpc = "0.0.0.0:2510"
 )
 
 func main() {
@@ -109,5 +107,4 @@ func configureTransport(hostUrl string) (client.KV, func(), error) {
 		err = errors.New("unknown transport: " + transport)
 	}
 	return kv, cancel, err
-
 }
